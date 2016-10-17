@@ -677,23 +677,29 @@ public class ReverseProxySecurityRealm extends SecurityRealm {
 	public GroupDetails loadGroupByGroupname(String groupname) throws UsernameNotFoundException, DataAccessException {
 
 		final Set<String> groups;
-
+		final String group;
+        	if(groupname.startsWith("@")) {
+            		group = groupname.substring(1);
+        	} else {
+            		group = groupname;
+        	}
+		
 		if (getLDAPURL() != null) {
 			// TODO: obtain a DN instead so that we can obtain multiple attributes later
 			String searchBase = groupSearchBase != null ? groupSearchBase : "";
 			String searchFilter = groupSearchFilter != null ? groupSearchFilter : GROUP_SEARCH;
-			groups = ldapTemplate.searchForSingleAttributeValues(searchBase, searchFilter, new String[]{groupname}, "cn");
+			groups = ldapTemplate.searchForSingleAttributeValues(searchBase, searchFilter, new String[]{group}, "cn");
 		} else {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 			GrantedAuthority[] authorities = authContext.get(auth.getName());
 
-			SearchTemplate searchTemplate = new GroupSearchTemplate(groupname);
+			SearchTemplate searchTemplate = new GroupSearchTemplate(group);
 
 			groups = proxyTemplate.searchForSingleAttributeValues(searchTemplate, authorities);
 		}
 
 		if(groups.isEmpty())
-			throw new UsernameNotFoundException(groupname);
+			throw new UsernameNotFoundException(group);
 
 		return new GroupDetails() {
 			@Override
